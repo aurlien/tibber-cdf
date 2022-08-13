@@ -1,20 +1,22 @@
+from dotenv import load_dotenv
+import os
 import asyncio
 import aiohttp
-import calendar
 import tibber
 from cognite.client import CogniteClient
 from cognite.client.data_classes import ExtractionPipelineRun
 from datetime import datetime
 
-ACCESS_TOKEN = '' # from Tibber's API
-TENANT_ID = '' # Azure AD tenant ID associated with CDF project
-CLIENT_ID = '' # Client ID of Azure AD app used to authenticate
-CDF_CLUSTER = 'api'  # api, westeurope-1 etc
-COGNITE_PROJECT = ''  # Name of CDF project
+load_dotenv()
+
+ACCESS_TOKEN = os.getenv("TIBBER_ACCESS_TOKEN") # from Tibber's API
+TENANT_ID = os.getenv("AZURE_TENANT_ID") # Azure AD tenant ID associated with CDF project
+CLIENT_ID = os.getenv("AZURE_CLIENT_ID") # Client ID of Azure AD app used to authenticate
+CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET") # Client secret from Azure AD app used to authenticate
+CDF_CLUSTER = os.getenv("CDF_CLUSTER")  # api, westeurope-1 etc
+COGNITE_PROJECT = os.getenv("COGNITE_PROJECT")  # Name of CDF project
 
 SCOPES = [f"https://{CDF_CLUSTER}.cognitedata.com/.default"]
-
-CLIENT_SECRET = "" # Client secret from Azure AD app used to authenticate
 
 TOKEN_URL = "https://login.microsoftonline.com/%s/oauth2/v2.0/token" % TENANT_ID
 
@@ -28,7 +30,7 @@ client = CogniteClient(
     client_name="tibber_extractor"
 )
 
-async def _callback(pkg):
+def _callback(pkg):
     data = pkg.get("data")
     if data is None:
         return
@@ -53,10 +55,9 @@ async def run():
     homes = tibber_connection.get_homes(only_active=False)
     print(homes)
     if len(homes) > 0:
-    	home = homes[0]
-    	await home.rt_subscribe(_callback)
+        home = homes[0]
+        await home.rt_subscribe(_callback)
 
 loop = asyncio.get_event_loop()
 asyncio.ensure_future(run())
 loop.run_forever()
-
